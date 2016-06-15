@@ -37,51 +37,52 @@ class MyTableViewController: UITableViewController {
 	
 	func getJsonFromURL () {
 		
-		guard let url: NSURL = NSURL(string: "http://jsonplaceholder.typicode.com/users") else {
+		let urlString = "https://itunes.apple.com/us/rss/topmovies/limit=100/json"
+		
+		guard let url: NSURL = NSURL(string: urlString) else {
 			return
 		}
+		
+		
 		let urlRequest = NSURLRequest(URL: url)
 		
-		let config = NSURLSessionConfiguration.defaultSessionConfiguration()
-		let session = NSURLSession(configuration: config)
+		let task = NSURLSession.sharedSession().dataTaskWithRequest(urlRequest) {
+			data, response, error in
+			if let data = data
+				where error == nil {
+					
+					var jd: NSMutableDictionary!
+					
+					do {
+						jd = try NSJSONSerialization.JSONObjectWithData(data, options: NSJSONReadingOptions()) as? NSMutableDictionary
+					} catch _ as NSError {
+						print("error=\(error!.localizedDescription)")
+						return
+					}
+					
+					guard let jdA = jd["feed"] as? NSDictionary else {
+						print("feed is not a Dictionary")
+						return
+					}
+					
+					guard let jdE = jdA["entry"] as? Array<NSDictionary> else {
+						print("entry is not a Array")
+						return
+					}
+					
+					self.aData = NSMutableArray(array: jdE)
+					
+					dispatch_async(dispatch_get_main_queue(), { () -> Void in
+						self.tableView.reloadData()
+					})
+					
+			} else {
+				print("error=\(error!.localizedDescription)")
+			}
+		}
 		
-		let task = session.dataTaskWithRequest(urlRequest, completionHandler: { (data, response, error) in
-			guard let responseData = data else {
-				print("Error: did not receive data")
-				return
-			}
-			guard error == nil else {
-				print("error calling GET on /posts/1")
-				print(error)
-				return
-			}
-			
-			// parse the result as JSON, since that's what the API provides
-			
-			do {
-				let JSON = try NSJSONSerialization.JSONObjectWithData(responseData, options:NSJSONReadingOptions(rawValue: 0))
-				guard let JSONArray :NSArray = JSON as? NSArray else {
-					print("Not an Array")
-					// put in function
-					return
-				}
-				self.aData = NSMutableArray(array: JSONArray)
-
-				print("JSONArry! \(JSONArray)")
-			} catch let JSONError as NSError {
-				print("\(JSONError)")
-			}
-			
-			
-			dispatch_async(dispatch_get_main_queue(), { () -> Void in
-				
-				self.tableView.reloadData()
-				
-			})
-
-		})
 		task.resume()
-		
+
 	}
 	
     // MARK: - Table view data source
@@ -108,21 +109,22 @@ class MyTableViewController: UITableViewController {
 			cell.textLabel?.text = "Loading..."
 		} else {
 			
-			let dd = aData[indexPath.row]
-			
-			guard let d = dd as? NSDictionary else {
+			guard let d = aData[indexPath.row] as? NSDictionary else {
 				cell.textLabel?.text = "Whoops \(indexPath.row)"
 				return cell
 			}
 			
-			let tName = d.objectForKey("name")
-			
-			guard let sName: NSString = tName as? NSString else {
+			guard let dName: NSDictionary = d["im:name"] as? NSDictionary else {
 				cell.textLabel?.text = "Whoops 2 \(indexPath.row)"
 				return cell
 			}
 			
-			cell.textLabel?.text = sName as String
+			guard let sName: String = dName["label"] as? String else {
+				cell.textLabel?.text = "Whoops 3 \(indexPath.row)"
+				return cell
+			}
+			
+			cell.textLabel?.text = sName //as String
 
 		}
 		
