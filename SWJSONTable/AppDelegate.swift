@@ -2,7 +2,7 @@
 //  AppDelegate.swift
 //  SWJSONTable
 //
-//  Created by Don Magnusson on 6/14/16.
+//  Created by DonMag on 6/14/16.
 //  Copyright © 2016 DonMag. All rights reserved.
 //
 
